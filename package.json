@@ -1,0 +1,38 @@
+{
+  "name": "visionme-dapp" ,
+  "version": "1.0.0",
+  "private": true,
+  "description": "VisionMe: savings habits dApp on Stellar using Social Wallet, Next.js, Supabase, and Soroban contracts",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "prepare": "husky",
+    "postinstall": "patch-package"
+  },
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.4"
+  },
+  "packageManager": "npm@10.2.4",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "overrides": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}
