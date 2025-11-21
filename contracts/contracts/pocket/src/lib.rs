@@ -25,6 +25,8 @@ pub struct PocketData {
 pub enum DataKey {
     Pocket(i128),    // pocket_id -> PocketData
     NextPocketId,    // Próximo ID disponible
+    Vault,
+    Asset
 }
 
 #[contract]
@@ -33,6 +35,16 @@ pub struct PocketContract;
 #[contractimpl]
 impl PocketContract {
     /// Crear un nuevo pocket de ahorro
+    fn __constructor(env: Env, vault: Address, asset: Address){
+        env.storage()
+            .instance()
+            .set(&DataKey::Vault, &vault);
+
+        env.storage()
+            .instance()
+            .set(&DataKey::Asset, &asset);
+    }
+
     pub fn create_pocket(
         env: Env,
         owner: Address,
@@ -80,8 +92,11 @@ impl PocketContract {
     }
 
     /// Depositar en un pocket (incrementa el contador)
-    pub fn deposit(env: Env, pocket_id: i128, from: Address, amount: i128, token_address: Address, vault_address: Address) {
+    pub fn deposit(env: Env, pocket_id: i128, from: Address, amount: i128) {
         from.require_auth();
+
+        let token_address: Address = env.storage().instance().get(&DataKey::Asset).unwrap();
+        let vault_address: Address = env.storage().instance().get(&DataKey::Vault).unwrap();
 
         if amount <= 0 {
             panic!("Amount must be positive");
@@ -130,8 +145,11 @@ impl PocketContract {
     }
 
     /// Retirar de un pocket (decrementa el contador)
-    pub fn withdraw(env: Env, pocket_id: i128, to: Address, df_tokens_amount: i128, token_address: Address, vault_address: Address) {
+    pub fn withdraw(env: Env, pocket_id: i128, to: Address, df_tokens_amount: i128) {
         to.require_auth();
+
+        let token_address: Address = env.storage().instance().get(&DataKey::Asset).unwrap();
+        let vault_address: Address = env.storage().instance().get(&DataKey::Vault).unwrap();
 
         if df_tokens_amount <= 0 {
             panic!("Amount must be positive");
