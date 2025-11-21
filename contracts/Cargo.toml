@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "contracts/*",
 ]
+exclude = ["contracts/wasms"]
 
 [workspace.dependencies]
 soroban-sdk = "23.0.3"

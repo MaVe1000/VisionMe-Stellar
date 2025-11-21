@@ -1,8 +1,11 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, Address, Env, Symbol,
+    contract, contractimpl, contracttype, Address, Env, Symbol, vec,
 };
+
+mod defindex_vault;
+use defindex_vault::DeFindexVaultClient;
 
 // Estructura que guarda los datos de cada "pocket" (bolsillo de ahorro)
 #[contracttype]
@@ -12,6 +15,9 @@ pub struct PocketData {
     pub asset: Address,         // Token que se ahorra
     pub goal_amount: i128,      // Meta de ahorro
     pub current_amount: i128,   // Cantidad actual (contador lógico)
+    pub df_tokens: i128,
+    pub first_deposit: Option<u64>,
+    pub last_deposit: Option<u64>
 }
 
 // Claves para guardar datos en storage
@@ -49,6 +55,9 @@ impl PocketContract {
             asset,
             goal_amount,
             current_amount: 0,
+            df_tokens: 0,
+            first_deposit: None,
+            last_deposit: None
         };
 
         // Guardar en storage
@@ -71,7 +80,7 @@ impl PocketContract {
     }
 
     /// Depositar en un pocket (incrementa el contador)
-    pub fn deposit(env: Env, pocket_id: i128, from: Address, amount: i128) {
+    pub fn deposit(env: Env, pocket_id: i128, from: Address, amount: i128, token_address: Address, vault_address: Address) {
         from.require_auth();
 
         if amount <= 0 {
@@ -90,8 +99,24 @@ impl PocketContract {
             panic!("Only owner can deposit");
         }
 
+        if pocket.first_deposit == None {
+            pocket.first_deposit = Some(env.ledger().timestamp())
+        }
+
+        let defindex_vault_client = DeFindexVaultClient::new(&env, &vault_address);
+
+        // Deposit into vault - user's signature authorizes vault to transfer from their account
+        let (_, df_tokens, _) = defindex_vault_client.deposit(
+            &vec![&env, amount],  // Amounts array (for multi-asset vaults; currently single-asset)
+            &vec![&env, 0],                      // Minimum amounts out (slippage protection for multi-asset vaults)
+            &from,                            // Depositor (receives vault shares)
+            &true                              // invest: false = keep as idle in vault; true = invest into strategy
+        );
+        
         // Actualizar cantidad
         pocket.current_amount += amount;
+        pocket.df_tokens += df_tokens;
+        pocket.last_deposit = Some(env.ledger().timestamp());
 
         // Guardar
         env.storage()
@@ -105,10 +130,10 @@ impl PocketContract {
     }
 
     /// Retirar de un pocket (decrementa el contador)
-    pub fn withdraw(env: Env, pocket_id: i128, to: Address, amount: i128) {
+    pub fn withdraw(env: Env, pocket_id: i128, to: Address, df_tokens_amount: i128, token_address: Address, vault_address: Address) {
         to.require_auth();
 
-        if amount <= 0 {
+        if df_tokens_amount <= 0 {
             panic!("Amount must be positive");
         }
 
@@ -122,11 +147,21 @@ impl PocketContract {
             panic!("Only owner can withdraw");
         }
 
-        if pocket.current_amount < amount {
+        if pocket.df_tokens < df_tokens_amount {
             panic!("Insufficient balance");
         }
 
-        pocket.current_amount -= amount;
+        
+        let defindex_vault_client = DeFindexVaultClient::new(&env, &vault_address);
+
+        let amounts_withdrawn = defindex_vault_client.withdraw(
+            &df_tokens_amount,  // df tokens amount to withdraw 
+            &vec![&env, 0],                      // Minimum amounts out (slippage protection for multi-asset vaults)
+            &to,                            // withdrawer (receives vault shares)
+        );
+        
+        pocket.current_amount = pocket.current_amount - amounts_withdrawn.get(0).unwrap();
+        pocket.df_tokens = pocket.df_tokens - df_tokens_amount;
 
         env.storage()
             .persistent()
@@ -134,7 +169,7 @@ impl PocketContract {
 
         env.events().publish(
             (Symbol::new(&env, "withdraw"),),
-            (pocket_id, to, amount),
+            (pocket_id, to, amounts_withdrawn),
         );
     }
 
