@@ -74,3 +74,4 @@ export default function Step3Profile({ profileData, setProfileData, onNext, onBa
     </div>
   )
 }
+
