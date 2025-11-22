@@ -59,9 +59,9 @@ export default function Step5Completed({ profileData, avatarData }: Step5Complet
         </p>
       </div>
 
-      <a href="/dashboard">
+      <a href="/auth">
         <button className="btn-primary" style={{ maxWidth: "300px" }}>
-          Ir al Dashboard
+          Ir al Ingreso
         </button>
       </a>
     </div>

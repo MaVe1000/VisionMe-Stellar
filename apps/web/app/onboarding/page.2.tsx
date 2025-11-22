@@ -7,7 +7,7 @@ import Step3Profile from "@/components/onboarding/Step3Profile"
 import Step4Avatar from "@/components/onboarding/Step4Avatar"
 import Step5Completed from "@/components/onboarding/Step5Completed"
 
-export default function Home() {
+export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0)
   const [profileData, setProfileData] = useState({ name: "", bio: "" })
   const [avatarData, setAvatarData] = useState({
