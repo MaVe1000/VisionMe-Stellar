@@ -198,6 +198,8 @@ impl PocketContract {
             .get(&DataKey::Pocket(pocket_id))
             .expect("Pocket not found")
     }
+}
+
 /// Consulta el vault de DeFindex para calcular el valor actual de los dfTokens
     pub fn get_real_value(env: Env, pocket_id: i128) -> i128 {
     let pocket: PocketData = env
@@ -316,7 +318,6 @@ impl PocketContract {
 
         apy // Retorna APY con 2 decimales (ej: 650 = 6.50%)
     }
-}
 
 
 ///Tests
