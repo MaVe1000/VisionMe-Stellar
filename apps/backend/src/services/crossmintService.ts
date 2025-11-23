@@ -3,6 +3,15 @@
 
 import { ENV } from "../config/env";
 import fetch from "node-fetch";
+import { createCrossmint, CrossmintAuth } from "@crossmint/server-sdk";
+
+// Initialize Crossmint with server-side API key
+const crossmint = createCrossmint({
+  apiKey: ENV.CROSSMINT_API_KEY,
+});
+
+// Get CrossmintAuth instance for user management
+export const crossmintAuth = CrossmintAuth.from(crossmint);
 
 /**
  * Service for Crossmint integration
@@ -92,6 +101,25 @@ export class CrossmintService {
     } catch (error) {
       console.error("Token verification error:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Get user profile from Crossmint (using server SDK)
+   * Requires @crossmint/server-sdk installed
+   *
+   * @param userId - User's Crossmint ID
+   * @returns User object with profile data (email, google, farcaster, etc.)
+   */
+  async getUserProfile(userId: string) {
+    try {
+      console.log(`[CrossmintService] Fetching user profile for: ${userId}`);
+      const user = await crossmintAuth.getUser(userId);
+      console.log(`[CrossmintService] User profile fetched successfully`);
+      return user;
+    } catch (error: any) {
+      console.error("[CrossmintService] Error fetching user profile:", error);
+      throw new Error(`Failed to fetch Crossmint user: ${error.message}`);
     }
   }
 }
